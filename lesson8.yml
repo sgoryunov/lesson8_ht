@@ -1,0 +1,48 @@
+---
+- name: build war
+  hosts: build
+  become: yes
+
+
+  tasks:
+  - name: Esure git and maven package is present
+    apt:
+      name: 
+      - git
+      - maven
+      state: present
+
+  - name: Clone repository
+    git:
+      repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+      dest: /tmp/boxfuse-sample-java-war-hello
+
+  - name: Build war
+    shell: mvn -f /tmp/boxfuse-sample-java-war-hello package
+ 
+  - name: Copy from war file from muild to master
+    fetch:
+      src: /tmp/boxfuse-sample-java-war-hello/target/hello-1.0.war
+      dest: ./
+      flat: yes
+
+- name: production
+  hosts: prod
+  become: yes
+
+  tasks:
+  - name: Ensure tomcat package is present
+    apt:
+      name: tomcat9
+      state: present
+
+  - name: Copy war to tomcat app dir
+    copy:
+      src: hello-1.0.war
+      dest: /var/lib/tomcat9/webapps/
+
+  - name: Ensure tomcat service is started
+    service:
+     name: tomcat9
+     state: started
+
